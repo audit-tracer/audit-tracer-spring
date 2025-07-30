@@ -3,7 +3,6 @@ package com.audittracer.client.spring;
 import com.audittracer.client.spring.annotation.Audit;
 import com.audittracer.client.spring.annotation.AuditParam;
 import com.audittracer.client.spring.exception.FieldEmptyException;
-import com.audittracer.client.spring.service.ActionService;
 
 import jakarta.annotation.PostConstruct;
 import jakarta.servlet.http.HttpServletRequest;
@@ -13,11 +12,9 @@ import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.annotation.AfterReturning;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.reflect.MethodSignature;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.expression.Expression;
 import org.springframework.expression.ExpressionParser;
-import org.springframework.expression.spel.SpelCompilerMode;
-import org.springframework.expression.spel.SpelParserConfiguration;
-import org.springframework.expression.spel.standard.SpelExpressionParser;
 import org.springframework.expression.spel.support.StandardEvaluationContext;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -36,6 +33,7 @@ import java.util.concurrent.ConcurrentHashMap;
 @Component
 @Aspect
 @RequiredArgsConstructor
+@ConditionalOnProperty(prefix = "audit-tracer", name = "enabled", matchIfMissing = true)
 public class AuditInterceptor {
   private final ActionService actionService;
   private final ExpressionParser compiledParser;
@@ -43,6 +41,11 @@ public class AuditInterceptor {
   // Expression cache for performance
   private final ConcurrentHashMap<String, Expression> expressionCache = new ConcurrentHashMap<>(256);
   private final ConcurrentHashMap<Method, CachedMethodInfo> methodCache = new ConcurrentHashMap<>(128);
+
+  @PostConstruct
+  public void init() {
+    log.warn("AuditInterceptor has been initialized");
+  }
 
   @AfterReturning(
           pointcut = "@annotation(com.audittracer.client.spring.annotation.Audit)",
@@ -175,7 +178,7 @@ public class AuditInterceptor {
             .metadata(evaluatedMetadata)
             .build();
 
-    this.actionService.send(actionObj);
+    this.actionService.processAction(actionObj);
   }
 
   private Map<String, String> processMetadata(String[] metadataExpressions, StandardEvaluationContext context) {

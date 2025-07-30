@@ -1,0 +1,56 @@
+{
+  "groups": [
+    {
+      "name": "audit-tracer",
+      "type": "com.audittracer.client.spring.config.properties.PropertiesConfig",
+      "description": "Audit Tracer configuration properties"
+    },
+    {
+      "name": "audit-tracer.thread",
+      "type": "com.audittracer.client.spring.config.properties.thread.ThreadPropertiesConfig",
+      "description": "Thread pool configuration"
+    },
+    {
+      "name": "audit-tracer.queue",
+      "type": "com.audittracer.client.spring.config.properties.queue.QueuePropertiesConfig",
+      "description": "Queue configuration"
+    }
+  ],
+  "properties": [
+    {
+      "name": "audit-tracer.url",
+      "type": "java.lang.String",
+      "description": "Audit server URL",
+      "defaultValue": "http://localhost:3333"
+    },
+    {
+      "name": "audit-tracer.api-key",
+      "type": "java.lang.String",
+      "description": "API key for authentication"
+    },
+    {
+      "name": "audit-tracer.enabled",
+      "type": "java.lang.Boolean",
+      "description": "Enable/disable audit tracer",
+      "defaultValue": true
+    },
+    {
+      "name": "audit-tracer.thread.type",
+      "type": "com.audittracer.client.spring.config.properties.thread.ThreadType",
+      "description": "Thread pool type (FIXED, CACHED)",
+      "defaultValue": "FIXED"
+    },
+    {
+      "name": "audit-tracer.thread.size",
+      "type": "java.lang.Integer",
+      "description": "Thread pool size",
+      "defaultValue": 3
+    },
+    {
+      "name": "audit-tracer.queue.size",
+      "type": "java.lang.Integer",
+      "description": "Queue size",
+      "defaultValue": 1000
+    }
+  ]
+}
