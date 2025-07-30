@@ -4,9 +4,10 @@ import com.audittracer.client.spring.dto.AuditBatchRequest;
 import com.audittracer.client.spring.config.properties.PropertiesConfig;
 import com.github.f4b6a3.ulid.Ulid;
 import jakarta.annotation.PostConstruct;
-import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -32,11 +33,23 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-@Slf4j
+import static com.audittracer.client.spring.AuditTracerName.AUDIT_TRACER_ENABLED_FLAG;
+import static com.audittracer.client.spring.AuditTracerName.HTTP_EXECUTOR_BEAN;
+import static com.audittracer.client.spring.AuditTracerName.BATCH_BEAN;
+import static com.audittracer.client.spring.AuditTracerName.CONFIG_BASE;
+import static com.audittracer.client.spring.AuditTracerName.HEADER_API_KEY;
+
 @Service
 @Lazy
-@ConditionalOnProperty(prefix = "audit-tracer", name = "enabled", matchIfMissing = true)
+@ConditionalOnProperty(
+        prefix = CONFIG_BASE,
+        name = AUDIT_TRACER_ENABLED_FLAG,
+        matchIfMissing = true
+)
 public class ActionService implements DisposableBean {
+  private static final Logger LOGGER = LoggerFactory.getLogger(ActionService.class);
+  private static final Duration FLUSH_INTERVAL = Duration.ofSeconds(1);
+
   private final PropertiesConfig config;
   private final RestTemplate restTemplate;
   private final BlockingQueue<Action> actionQueue;
@@ -44,18 +57,16 @@ public class ActionService implements DisposableBean {
   private final ExecutorService httpExecutor;
   private final AtomicBoolean isShutdown = new AtomicBoolean(false);
 
-  private static final Duration FLUSH_INTERVAL = Duration.ofSeconds(1);
-
   @PostConstruct
   public void init() {
-    log.warn("ActionService has been initialized");
+    LOGGER.debug("[AUDIT-TRACER] - com.audittracer.client.spring.ActionService::init");
   }
 
   public ActionService(
           final @NotNull PropertiesConfig config,
           final @NotNull RestTemplate restTemplate,
-          @Qualifier("batch") final @NotNull ScheduledExecutorService batchProcessor,
-          @Qualifier("httpExecutor") final @NotNull ExecutorService httpExecutor) {
+          @Qualifier(BATCH_BEAN) final @NotNull ScheduledExecutorService batchProcessor,
+          @Qualifier(HTTP_EXECUTOR_BEAN) final @NotNull ExecutorService httpExecutor) {
     this.config = config;
     this.restTemplate = restTemplate;
     this.batchProcessor = batchProcessor;
@@ -67,13 +78,13 @@ public class ActionService implements DisposableBean {
 
   public void processAction(final @NotNull Action action) {
     if (this.isShutdown.get()) {
-      log.warn("ActionService shutting down, dropping action: {}", action.getAction());
+      LOGGER.warn("ActionService shutting down, dropping action: {}", action.getAction());
       return;
     }
 
     final boolean offered = this.actionQueue.offer(action);
     if (!offered) {
-      log.error("Action queue full, dropping action: {}", action.getAction());
+      LOGGER.error("Action queue full, dropping action: {}", action.getAction());
       // TODO: Implement fallback mechanism (disk persistence)
     }
   }
@@ -112,14 +123,10 @@ public class ActionService implements DisposableBean {
   )
   private boolean sendBatch(List<Action> batch) {
     final HttpHeaders headers = new HttpHeaders();
-    headers.set("X-API-KEY", this.config.getApiKey());
+    headers.set(HEADER_API_KEY, this.config.getApiKey());
     headers.setContentType(MediaType.APPLICATION_JSON);
 
-    final AuditBatchRequest request = AuditBatchRequest.builder()
-            .actions(batch)
-            .batchId(Ulid.fast().toString())
-            .timestamp(Instant.now())
-            .build();
+    final AuditBatchRequest request = new AuditBatchRequest(batch, Ulid.fast().toString(), Instant.now());
 
     final HttpEntity<AuditBatchRequest> entity = new HttpEntity<>(request, headers);
 
@@ -136,26 +143,26 @@ public class ActionService implements DisposableBean {
           final @Nullable Throwable throwable,
           final @NotNull List<Action> batch) {
     if (throwable != null) {
-      log.error("Failed to send audit batch: {}", throwable.getMessage());
+      LOGGER.error("Failed to send audit batch: {}", throwable.getMessage());
       handleFailedBatch(batch);
     } else if (success) {
-      log.debug("Successfully sent batch of {} actions", batch.size());
+      LOGGER.debug("Successfully sent batch of {} actions", batch.size());
     }
   }
 
   private void handleFailedBatch(List<Action> batch) {
     // TODO: Implement dead letter queue or disk persistence
-    log.error("Permanently failed to send batch of {} actions", batch.size());
+    LOGGER.error("Permanently failed to send batch of {} actions", batch.size());
   }
 
   @Override
   public void destroy() {
-    log.info("Shutting down ActionService...");
+    LOGGER.info("Shutting down ActionService...");
     this.isShutdown.set(true);
     this.processBatch();
 
     this.shutdownExecutors();
-    log.info("ActionService shutdown complete");
+    LOGGER.info("ActionService shutdown complete");
   }
 
 

@@ -1,7 +1,6 @@
 package com.audittracer.client.spring;
 
-import lombok.Builder;
-import lombok.Data;
+import com.github.f4b6a3.ulid.UlidCreator;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.Serial;
@@ -9,8 +8,6 @@ import java.io.Serializable;
 import java.time.Instant;
 import java.util.Map;
 
-@Data
-@Builder
 public class Action implements Comparable<Action>, Serializable {
   @Serial
   private static final long serialVersionUID = 1L;
@@ -18,17 +15,61 @@ public class Action implements Comparable<Action>, Serializable {
   private final String id;
   private final String action;
   private final AuditType auditType;
-  private final String targetId;
-  private final Map<String, String> metadata;
   private final String targetType;
+  private final String targetId;
   private final String targetName;
-  private final String target;
-
+  private final Map<String, String> metadata;
   private final Instant timestamp;
-  private final String tenantId;
-  private final String userId;
-  private final String sessionId;
-  private final String ipAddress;
+
+
+  public Action(
+          final String action,
+          final AuditType auditType,
+          final String targetType,
+          final String targetId,
+          final String targetName,
+          final Map<String, String> metadata) {
+    this.id = UlidCreator.getUlid().toString();
+    this.timestamp = Instant.now();
+    this.action = action;
+    this.auditType = auditType;
+    this.targetType = targetType;
+    this.targetId = targetId;
+    this.targetName = targetName;
+    this.metadata = metadata;
+  }
+
+  public String getId() {
+    return id;
+  }
+
+  public String getAction() {
+    return action;
+  }
+
+  public AuditType getAuditType() {
+    return auditType;
+  }
+
+  public String getTargetType() {
+    return targetType;
+  }
+
+  public String getTargetId() {
+    return targetId;
+  }
+
+  public String getTargetName() {
+    return targetName;
+  }
+
+  public Map<String, String> getMetadata() {
+    return metadata;
+  }
+
+  public Instant getTimestamp() {
+    return timestamp;
+  }
 
   @Override
   public String toString() {

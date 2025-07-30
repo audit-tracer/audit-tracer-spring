@@ -2,16 +2,58 @@ package com.audittracer.client.spring.config.properties;
 
 import com.audittracer.client.spring.config.properties.queue.QueuePropertiesConfig;
 import com.audittracer.client.spring.config.properties.thread.ThreadPropertiesConfig;
-import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
+import static com.audittracer.client.spring.AuditTracerName.CONFIG_BASE;
 
-@ConfigurationProperties("audit-tracer")
-@Data
+@ConfigurationProperties(CONFIG_BASE)
 public class PropertiesConfig {
   private ThreadPropertiesConfig thread;
   private QueuePropertiesConfig queue;
   private String url = "http://localhost:3333";
   private String apiKey;
   private boolean enabled = true;
+
+  public PropertiesConfig() {
+  }
+
+  public ThreadPropertiesConfig getThread() {
+    return thread;
+  }
+
+  public QueuePropertiesConfig getQueue() {
+    return queue;
+  }
+
+  public String getUrl() {
+    return url;
+  }
+
+  public String getApiKey() {
+    return apiKey;
+  }
+
+  public boolean isEnabled() {
+    return enabled;
+  }
+
+  public void setThread(ThreadPropertiesConfig thread) {
+    this.thread = thread;
+  }
+
+  public void setQueue(QueuePropertiesConfig queue) {
+    this.queue = queue;
+  }
+
+  public void setUrl(String url) {
+    this.url = url;
+  }
+
+  public void setApiKey(String apiKey) {
+    this.apiKey = apiKey;
+  }
+
+  public void setEnabled(boolean enabled) {
+    this.enabled = enabled;
+  }
 }

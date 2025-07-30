@@ -6,12 +6,13 @@ import com.audittracer.client.spring.exception.FieldEmptyException;
 
 import jakarta.annotation.PostConstruct;
 import jakarta.servlet.http.HttpServletRequest;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.annotation.AfterReturning;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.reflect.MethodSignature;
+import org.jetbrains.annotations.NotNull;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.expression.Expression;
 import org.springframework.expression.ExpressionParser;
@@ -29,22 +30,36 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-@Slf4j
+import static com.audittracer.client.spring.AuditTracerName.AUDIT_TRACER_ENABLED_FLAG;
+import static com.audittracer.client.spring.AuditTracerName.CONFIG_BASE;
+
 @Component
 @Aspect
-@RequiredArgsConstructor
-@ConditionalOnProperty(prefix = "audit-tracer", name = "enabled", matchIfMissing = true)
+@ConditionalOnProperty(
+        prefix = CONFIG_BASE,
+        name = AUDIT_TRACER_ENABLED_FLAG,
+        matchIfMissing = true
+)
 public class AuditInterceptor {
-  private final ActionService actionService;
-  private final ExpressionParser compiledParser;
+  private static final Logger LOGGER = LoggerFactory.getLogger(AuditInterceptor.class);
 
-  // Expression cache for performance
-  private final ConcurrentHashMap<String, Expression> expressionCache = new ConcurrentHashMap<>(256);
-  private final ConcurrentHashMap<Method, CachedMethodInfo> methodCache = new ConcurrentHashMap<>(128);
+  private final @NotNull ActionService actionService;
+  private final @NotNull ExpressionParser compiledParser;
+  private final @NotNull ConcurrentHashMap<String, Expression> expressionCache;
+  private final @NotNull ConcurrentHashMap<Method, CachedMethodInfo> methodCache;
+
+  public AuditInterceptor(
+          final @NotNull ActionService actionService,
+          final @NotNull ExpressionParser compiledParser) {
+    this.actionService = actionService;
+    this.compiledParser = compiledParser;
+    this.expressionCache = new ConcurrentHashMap<>(256);
+    this.methodCache = new ConcurrentHashMap<>(128);
+  }
 
   @PostConstruct
   public void init() {
-    log.warn("AuditInterceptor has been initialized");
+    LOGGER.debug("[AUDIT-TRACER] - com.audittracer.client.spring.AuditInterceptor::init");
   }
 
   @AfterReturning(
@@ -124,7 +139,7 @@ public class AuditInterceptor {
         context.setVariable("isAuthenticated", false);
       }
     } catch (Exception e) {
-      log.warn("Security context not available: {}", e.getMessage());
+      LOGGER.warn("Security context not available: {}", e.getMessage());
       context.setVariable("username", "system");
       context.setVariable("isAuthenticated", false);
     }
@@ -149,7 +164,7 @@ public class AuditInterceptor {
                 request.getSession(false) != null ? request.getSession().getId() : null);
       }
     } catch (final Exception e) {
-      log.warn("HTTP request context not available: {}", e.getMessage());
+      LOGGER.warn("HTTP request context not available: {}", e.getMessage());
     }
   }
 
@@ -169,14 +184,7 @@ public class AuditInterceptor {
 
     final Map<String, String> evaluatedMetadata = processMetadata(auditAnnotation.metadata(), context);
 
-    final Action actionObj = Action.builder()
-            .action(evaluatedAction)
-            .auditType(auditAnnotation.type())
-            .targetType(evaluatedTargetType)
-            .targetId(evaluatedTargetId)
-            .targetName(evaluatedTargetName)
-            .metadata(evaluatedMetadata)
-            .build();
+    final Action actionObj = new Action(evaluatedAction, auditAnnotation.type(), evaluatedTargetType, evaluatedTargetId, evaluatedTargetName, evaluatedMetadata);
 
     this.actionService.processAction(actionObj);
   }
@@ -218,7 +226,7 @@ public class AuditInterceptor {
         final Object value = compiledExpression.getValue(context);
         return value != null ? value.toString() : null;
       } catch (final Exception e) {
-        log.error("SpEL evaluation failed for '{}' in field '{}': {}",
+        LOGGER.error("SpEL evaluation failed for '{}' in field '{}': {}",
                 expression, fieldName, e.getMessage());
         return "[SpEL Error: " + fieldName + "]";
       }
@@ -247,7 +255,7 @@ public class AuditInterceptor {
       try {
         return compiledParser.parseExpression(expr);
       } catch (Exception e) {
-        log.error("Failed to parse SpEL expression: '{}' - {}", expr, e.getMessage());
+        LOGGER.error("Failed to parse SpEL expression: '{}' - {}", expr, e.getMessage());
         throw e;
       }
     });
