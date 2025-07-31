@@ -2,7 +2,6 @@ package com.audittracer.client.spring.config;
 
 import com.audittracer.client.spring.config.properties.thread.ThreadPropertiesConfig;
 import com.audittracer.client.spring.config.properties.thread.ThreadType;
-import org.jetbrains.annotations.NotNull;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.expression.ExpressionParser;
@@ -30,27 +29,27 @@ import static com.audittracer.client.spring.AuditTracerName.HTTP_EXECUTOR_BEAN;
 public class ApplicationConfiguration {
   private final ThreadPropertiesConfig threadConfig;
 
-  public ApplicationConfiguration(final @NotNull ThreadPropertiesConfig threadConfig) {
+  public ApplicationConfiguration(final ThreadPropertiesConfig threadConfig) {
     this.threadConfig = threadConfig;
   }
 
   @Bean
-  public @NotNull RestTemplate provideRestTemplate() {
+  public RestTemplate provideRestTemplate() {
     return new RestTemplate();
   }
 
   @Bean
-  public @NotNull ExpressionParser provideExpressionParser(final SpelParserConfiguration config) {
+  public ExpressionParser provideExpressionParser(final SpelParserConfiguration config) {
     return new SpelExpressionParser(config);
   }
 
   @Bean
-  public @NotNull SpelParserConfiguration provideSpelParserConfiguration() {
+  public SpelParserConfiguration provideSpelParserConfiguration() {
     return new SpelParserConfiguration(SpelCompilerMode.IMMEDIATE, this.getClass().getClassLoader());
   }
 
   @Bean(HTTP_EXECUTOR_BEAN)
-  public @NotNull ExecutorService provideThreadPoolExecutor() {
+  public ExecutorService provideThreadPoolExecutor() {
     return switch (threadConfig.getType()) {
       case ThreadType.FIXED -> Executors.newFixedThreadPool(threadConfig.getSize());
       case ThreadType.CACHE -> Executors.newCachedThreadPool();
@@ -58,7 +57,7 @@ public class ApplicationConfiguration {
   }
 
   @Bean(BATCH_BEAN)
-  public @NotNull ScheduledExecutorService provideBatchExecutor() {
+  public ScheduledExecutorService provideBatchExecutor() {
     return Executors.newSingleThreadScheduledExecutor();
   }
 }

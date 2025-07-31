@@ -4,8 +4,6 @@ import com.audittracer.client.spring.dto.AuditBatchRequest;
 import com.audittracer.client.spring.config.properties.PropertiesConfig;
 import com.github.f4b6a3.ulid.Ulid;
 import jakarta.annotation.PostConstruct;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.DisposableBean;
@@ -63,10 +61,10 @@ public class ActionService implements DisposableBean {
   }
 
   public ActionService(
-          final @NotNull PropertiesConfig config,
-          final @NotNull RestTemplate restTemplate,
-          @Qualifier(BATCH_BEAN) final @NotNull ScheduledExecutorService batchProcessor,
-          @Qualifier(HTTP_EXECUTOR_BEAN) final @NotNull ExecutorService httpExecutor) {
+          final PropertiesConfig config,
+          final RestTemplate restTemplate,
+          @Qualifier(BATCH_BEAN) final ScheduledExecutorService batchProcessor,
+          @Qualifier(HTTP_EXECUTOR_BEAN) final ExecutorService httpExecutor) {
     this.config = config;
     this.restTemplate = restTemplate;
     this.batchProcessor = batchProcessor;
@@ -76,7 +74,7 @@ public class ActionService implements DisposableBean {
     this.startBatchProcessor();
   }
 
-  public void processAction(final @NotNull Action action) {
+  public void processAction(final Action action) {
     if (this.isShutdown.get()) {
       LOGGER.warn("ActionService shutting down, dropping action: {}", action.getAction());
       return;
@@ -139,9 +137,9 @@ public class ActionService implements DisposableBean {
   }
 
   private void handleCompletedBatch(
-          final @NotNull Boolean success,
-          final @Nullable Throwable throwable,
-          final @NotNull List<Action> batch) {
+          final Boolean success,
+          final Throwable throwable,
+          final List<Action> batch) {
     if (throwable != null) {
       LOGGER.error("Failed to send audit batch: {}", throwable.getMessage());
       handleFailedBatch(batch);

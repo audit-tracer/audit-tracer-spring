@@ -1,7 +1,6 @@
 package com.audittracer.client.spring;
 
 import com.github.f4b6a3.ulid.UlidCreator;
-import org.jetbrains.annotations.NotNull;
 
 import java.io.Serial;
 import java.io.Serializable;
@@ -77,7 +76,7 @@ public class Action implements Comparable<Action>, Serializable {
   }
 
   @Override
-  public int compareTo(final @NotNull Action other) {
+  public int compareTo(final Action other) {
     return this.id.compareTo(other.id);
   }
 }

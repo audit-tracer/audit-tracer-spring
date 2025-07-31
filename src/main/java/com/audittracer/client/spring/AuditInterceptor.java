@@ -10,7 +10,6 @@ import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.annotation.AfterReturning;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.reflect.MethodSignature;
-import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -43,14 +42,14 @@ import static com.audittracer.client.spring.AuditTracerName.CONFIG_BASE;
 public class AuditInterceptor {
   private static final Logger LOGGER = LoggerFactory.getLogger(AuditInterceptor.class);
 
-  private final @NotNull ActionService actionService;
-  private final @NotNull ExpressionParser compiledParser;
-  private final @NotNull ConcurrentHashMap<String, Expression> expressionCache;
-  private final @NotNull ConcurrentHashMap<Method, CachedMethodInfo> methodCache;
+  private final ActionService actionService;
+  private final ExpressionParser compiledParser;
+  private final ConcurrentHashMap<String, Expression> expressionCache;
+  private final ConcurrentHashMap<Method, CachedMethodInfo> methodCache;
 
   public AuditInterceptor(
-          final @NotNull ActionService actionService,
-          final @NotNull ExpressionParser compiledParser) {
+          final ActionService actionService,
+          final ExpressionParser compiledParser) {
     this.actionService = actionService;
     this.compiledParser = compiledParser;
     this.expressionCache = new ConcurrentHashMap<>(256);
