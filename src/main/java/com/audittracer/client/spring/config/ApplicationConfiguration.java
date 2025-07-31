@@ -13,7 +13,6 @@ import org.springframework.web.client.RestTemplate;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
 
 import static com.audittracer.client.spring.AuditTracerName.AUDIT_TRACER_ENABLED_FLAG;
 import static com.audittracer.client.spring.AuditTracerName.BATCH_BEAN;

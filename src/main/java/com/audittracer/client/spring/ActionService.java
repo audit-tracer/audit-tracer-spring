@@ -38,6 +38,7 @@ import static com.audittracer.client.spring.AuditTracerName.LOG_PREFIX;
 
 @Service
 @ConditionalOnProperty(prefix = CONFIG_BASE, name = AUDIT_TRACER_ENABLED_FLAG, matchIfMissing = true)
+@SuppressWarnings("all")
 public class ActionService implements DisposableBean {
   private static final Logger LOGGER = LoggerFactory.getLogger(ActionService.class);
 

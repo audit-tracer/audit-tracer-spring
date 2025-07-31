@@ -16,11 +16,8 @@ import java.lang.annotation.Target;
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
 @Configuration
-@EnableConfigurationProperties({
-        ThreadPropertiesConfig.class,
-        QueuePropertiesConfig.class,
-        PropertiesConfig.class
-})
 @ComponentScan(AuditTracerName.BEAN_NAME)
+@EnableConfigurationProperties({ThreadPropertiesConfig.class, QueuePropertiesConfig.class, PropertiesConfig.class})
+@SuppressWarnings("unused")
 public @interface EnableAuditTracer {
 }

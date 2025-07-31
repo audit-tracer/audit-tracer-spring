@@ -34,11 +34,8 @@ import static com.audittracer.client.spring.AuditTracerName.LOG_PREFIX;
 
 @Component
 @Aspect
-@ConditionalOnProperty(
-        prefix = CONFIG_BASE,
-        name = AUDIT_TRACER_ENABLED_FLAG,
-        matchIfMissing = true
-)
+@ConditionalOnProperty(prefix = CONFIG_BASE, name = AUDIT_TRACER_ENABLED_FLAG, matchIfMissing = true)
+@SuppressWarnings("all")
 public class AuditInterceptor {
   private static final Logger LOGGER = LoggerFactory.getLogger(AuditInterceptor.class);
 

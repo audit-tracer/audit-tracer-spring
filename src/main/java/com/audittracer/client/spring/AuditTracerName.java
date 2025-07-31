@@ -1,5 +1,6 @@
 package com.audittracer.client.spring;
 
+@SuppressWarnings("all")
 public final class AuditTracerName {
   public static final String BEAN_NAME = "com.audittracer.client.spring";
   public static final String CONFIG_BASE = "audit-tracer";

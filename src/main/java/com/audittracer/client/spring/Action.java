@@ -7,6 +7,7 @@ import java.io.Serializable;
 import java.time.Instant;
 import java.util.Map;
 
+@SuppressWarnings("all")
 public class Action implements Comparable<Action>, Serializable {
   @Serial
   private static final long serialVersionUID = 1L;

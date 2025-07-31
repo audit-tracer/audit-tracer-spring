@@ -5,6 +5,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import static com.audittracer.client.spring.AuditTracerName.AUDIT_TRACER_THREAD;
 
 @ConfigurationProperties(AUDIT_TRACER_THREAD)
+@SuppressWarnings("unused")
 public class ThreadPropertiesConfig {
   private static final int DEFAULT_THREAD_SIZE = 1;
 
