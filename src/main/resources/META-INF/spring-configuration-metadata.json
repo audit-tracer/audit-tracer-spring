@@ -51,6 +51,12 @@
       "type": "java.lang.Integer",
       "description": "Queue size",
       "defaultValue": 1000
+    },
+    {
+      "name": "audit-tracer.environment",
+      "type": "com.audittracer.client.spring.config.properties.Environment",
+      "description": "Environment type (production, development, local)",
+      "defaultValue": "production"
     }
   ]
 }
