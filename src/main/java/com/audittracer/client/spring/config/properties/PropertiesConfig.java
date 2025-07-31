@@ -12,17 +12,17 @@ public class PropertiesConfig {
   private QueuePropertiesConfig queue;
   private String url = "http://localhost:3333";
   private String apiKey;
-  private String environment;
+  private Environment environment;
   private boolean enabled = true;
 
   public PropertiesConfig() {
   }
 
-  public String getEnvironment() {
+  public Environment getEnvironment() {
     return environment;
   }
 
-  public void setEnvironment(String environment) {
+  public void setEnvironment(Environment environment) {
     this.environment = environment;
   }
 

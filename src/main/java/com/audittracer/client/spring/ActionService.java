@@ -1,25 +1,24 @@
 package com.audittracer.client.spring;
 
+import com.audittracer.client.spring.config.properties.Environment;
 import com.audittracer.client.spring.dto.AuditBatchRequest;
 import com.audittracer.client.spring.config.properties.PropertiesConfig;
 import com.github.f4b6a3.ulid.Ulid;
-import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.context.annotation.Lazy;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.retry.annotation.Backoff;
+import org.springframework.retry.annotation.Recover;
 import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
-import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -27,7 +26,6 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -36,64 +34,56 @@ import static com.audittracer.client.spring.AuditTracerName.HTTP_EXECUTOR_BEAN;
 import static com.audittracer.client.spring.AuditTracerName.BATCH_BEAN;
 import static com.audittracer.client.spring.AuditTracerName.CONFIG_BASE;
 import static com.audittracer.client.spring.AuditTracerName.HEADER_API_KEY;
+import static com.audittracer.client.spring.AuditTracerName.LOG_PREFIX;
 
 @Service
-@Lazy
-@ConditionalOnProperty(
-        prefix = CONFIG_BASE,
-        name = AUDIT_TRACER_ENABLED_FLAG,
-        matchIfMissing = true
-)
+@ConditionalOnProperty(prefix = CONFIG_BASE, name = AUDIT_TRACER_ENABLED_FLAG, matchIfMissing = true)
 public class ActionService implements DisposableBean {
   private static final Logger LOGGER = LoggerFactory.getLogger(ActionService.class);
-  private static final Duration FLUSH_INTERVAL = Duration.ofSeconds(1);
 
   private final PropertiesConfig config;
   private final RestTemplate restTemplate;
   private final BlockingQueue<Action> actionQueue;
-  private final ScheduledExecutorService batchProcessor;
+  private final ExecutorService batchProcessor;
   private final ExecutorService httpExecutor;
   private final AtomicBoolean isShutdown = new AtomicBoolean(false);
-
-  @PostConstruct
-  public void init() {
-    LOGGER.debug("[AUDIT-TRACER] - com.audittracer.client.spring.ActionService::init");
-  }
 
   public ActionService(
           final PropertiesConfig config,
           final RestTemplate restTemplate,
-          @Qualifier(BATCH_BEAN) final ScheduledExecutorService batchProcessor,
+          @Qualifier(BATCH_BEAN) final ExecutorService batchProcessor,
           @Qualifier(HTTP_EXECUTOR_BEAN) final ExecutorService httpExecutor) {
+    LOGGER.debug("{} - com.audittracer.client.spring.ActionService::init", LOG_PREFIX);
+
     this.config = config;
     this.restTemplate = restTemplate;
     this.batchProcessor = batchProcessor;
     this.httpExecutor = httpExecutor;
     this.actionQueue = new LinkedBlockingQueue<>(config.getQueue().getSize());
-
-    this.startBatchProcessor();
   }
 
   public void processAction(final Action action) {
+    if (config.getEnvironment() == Environment.LOCAL) {
+      LOGGER.info("{} - {}", LOG_PREFIX, action.toString());
+      return;
+    }
+
     if (this.isShutdown.get()) {
       LOGGER.warn("ActionService shutting down, dropping action: {}", action.getAction());
       return;
     }
 
-    final boolean offered = this.actionQueue.offer(action);
-    if (!offered) {
-      LOGGER.error("Action queue full, dropping action: {}", action.getAction());
-      // TODO: Implement fallback mechanism (disk persistence)
-    }
-  }
+    try {
+      this.actionQueue.put(action);
 
-  private void startBatchProcessor() {
-    this.batchProcessor.scheduleWithFixedDelay(
-            this::processBatch,
-            FLUSH_INTERVAL.toMillis(),
-            FLUSH_INTERVAL.toMillis(),
-            TimeUnit.MILLISECONDS
-    );
+      if (this.actionQueue.size() >= this.config.getQueue().getSize()) {
+        this.batchProcessor.execute(this::processBatch);
+      }
+
+    } catch (final InterruptedException e) {
+      Thread.currentThread().interrupt();
+      LOGGER.error("Interrupted while queuing action: {}", action.getAction());
+    }
   }
 
   private void processBatch() {
@@ -117,7 +107,8 @@ public class ActionService implements DisposableBean {
 
   @Retryable(
           retryFor = Throwable.class,
-          backoff = @Backoff(value = 1_500L, multiplier = 2)
+          backoff = @Backoff(value = 1_500L, multiplier = 2),
+          recover = "recoverSendBatch"
   )
   private boolean sendBatch(List<Action> batch) {
     final HttpHeaders headers = new HttpHeaders();
@@ -136,8 +127,16 @@ public class ActionService implements DisposableBean {
     return response.getStatusCode().is2xxSuccessful();
   }
 
+
+  @Recover
+  public boolean recoverSendBatch(final Throwable throwable, final List<Action> actions) {
+    LOGGER.error("All retry attempts failed for batch of {} actions: {}", actions.size(), throwable.getMessage());
+    handleFailedBatch(actions);
+    return false;
+  }
+
   private void handleCompletedBatch(
-          final Boolean success,
+          final boolean success,
           final Throwable throwable,
           final List<Action> batch) {
     if (throwable != null) {
@@ -157,7 +156,10 @@ public class ActionService implements DisposableBean {
   public void destroy() {
     LOGGER.info("Shutting down ActionService...");
     this.isShutdown.set(true);
-    this.processBatch();
+
+    while (!this.actionQueue.isEmpty()) {
+      processBatch();
+    }
 
     this.shutdownExecutors();
     LOGGER.info("ActionService shutdown complete");

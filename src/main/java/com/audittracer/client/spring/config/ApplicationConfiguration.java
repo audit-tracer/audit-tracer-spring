@@ -57,7 +57,7 @@ public class ApplicationConfiguration {
   }
 
   @Bean(BATCH_BEAN)
-  public ScheduledExecutorService provideBatchExecutor() {
-    return Executors.newSingleThreadScheduledExecutor();
+  public ExecutorService provideBatchExecutor() {
+    return Executors.newSingleThreadExecutor();
   }
 }

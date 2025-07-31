@@ -4,7 +4,6 @@ import com.audittracer.client.spring.annotation.Audit;
 import com.audittracer.client.spring.annotation.AuditParam;
 import com.audittracer.client.spring.exception.FieldEmptyException;
 
-import jakarta.annotation.PostConstruct;
 import jakarta.servlet.http.HttpServletRequest;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.annotation.AfterReturning;
@@ -31,6 +30,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import static com.audittracer.client.spring.AuditTracerName.AUDIT_TRACER_ENABLED_FLAG;
 import static com.audittracer.client.spring.AuditTracerName.CONFIG_BASE;
+import static com.audittracer.client.spring.AuditTracerName.LOG_PREFIX;
 
 @Component
 @Aspect
@@ -50,15 +50,11 @@ public class AuditInterceptor {
   public AuditInterceptor(
           final ActionService actionService,
           final ExpressionParser compiledParser) {
+    LOGGER.debug("{} - com.audittracer.client.spring.AuditInterceptor::init", LOG_PREFIX);
     this.actionService = actionService;
     this.compiledParser = compiledParser;
     this.expressionCache = new ConcurrentHashMap<>(256);
     this.methodCache = new ConcurrentHashMap<>(128);
-  }
-
-  @PostConstruct
-  public void init() {
-    LOGGER.debug("[AUDIT-TRACER] - com.audittracer.client.spring.AuditInterceptor::init");
   }
 
   @AfterReturning(

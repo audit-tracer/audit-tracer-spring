@@ -9,6 +9,7 @@ public final class AuditTracerName {
   public static final String HTTP_EXECUTOR_BEAN = "executor.http";
   public static final String BATCH_BEAN = "executor.batch";
   public static final String HEADER_API_KEY = "X-API-KEY";
+  public static final String LOG_PREFIX = "\u001B[32m[AUDIT-TRACER]\u001B[0m";
 
   private AuditTracerName() {
   }
