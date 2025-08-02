@@ -52,6 +52,14 @@
         </dependency>
     </dependencies>
 
+    <distributionManagement>
+        <repository>
+            <id>repsy</id>
+            <name>My Private Maven Repository on Repsy</name>
+            <url>https://repo.repsy.io/mvn/audit-tracer/audit-tracer</url>
+        </repository>
+    </distributionManagement>
+
     <build>
         <plugins>
             <plugin>

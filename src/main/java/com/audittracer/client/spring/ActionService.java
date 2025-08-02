@@ -42,6 +42,11 @@ import static com.audittracer.client.spring.AuditTracerName.LOG_PREFIX;
 public class ActionService implements DisposableBean {
   private static final Logger LOGGER = LoggerFactory.getLogger(ActionService.class);
 
+  private static final long BATCH_BACKOFF_TIMEOUT = 1500L;
+  private static final long BATCH_MULTIPLIER = 2;
+  private static final long HTTP_THREAD_TIMEOUT = 30;
+  private static final long BATCH_THREAD_TIMEOUT = 10;
+
   private final PropertiesConfig config;
   private final RestTemplate restTemplate;
   private final BlockingQueue<Action> actionQueue;
@@ -82,7 +87,7 @@ public class ActionService implements DisposableBean {
       }
 
     } catch (final InterruptedException e) {
-      Thread.currentThread().interrupt();
+      Thread.currentThread().interrupt(); // prevent zombi threads
       LOGGER.error("Interrupted while queuing action: {}", action.getAction());
     }
   }
@@ -108,7 +113,7 @@ public class ActionService implements DisposableBean {
 
   @Retryable(
           retryFor = Throwable.class,
-          backoff = @Backoff(value = 1_500L, multiplier = 2),
+          backoff = @Backoff(value = BATCH_BACKOFF_TIMEOUT, multiplier = BATCH_MULTIPLIER),
           recover = "recoverSendBatch"
   )
   private boolean sendBatch(List<Action> batch) {
@@ -121,7 +126,7 @@ public class ActionService implements DisposableBean {
     final HttpEntity<AuditBatchRequest> entity = new HttpEntity<>(request, headers);
 
     final ResponseEntity<Boolean> response = restTemplate.postForEntity(
-            config.getUrl() + "/api/v1/audit/batch",
+            config.getUrl(),
             entity,
             Boolean.class);
 
@@ -172,10 +177,10 @@ public class ActionService implements DisposableBean {
     this.httpExecutor.shutdown();
 
     try {
-      if (!this.batchProcessor.awaitTermination(10, TimeUnit.SECONDS)) {
+      if (!this.batchProcessor.awaitTermination(BATCH_THREAD_TIMEOUT, TimeUnit.SECONDS)) {
         this.batchProcessor.shutdownNow();
       }
-      if (!this.httpExecutor.awaitTermination(30, TimeUnit.SECONDS)) {
+      if (!this.httpExecutor.awaitTermination(HTTP_THREAD_TIMEOUT, TimeUnit.SECONDS)) {
         this.httpExecutor.shutdownNow();
       }
     } catch (InterruptedException e) {

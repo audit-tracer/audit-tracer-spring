@@ -35,7 +35,7 @@ public class PropertiesConfig {
   }
 
   public String getUrl() {
-    return url;
+    return url + "/api/v1/audit/batch";
   }
 
   public String getApiKey() {
