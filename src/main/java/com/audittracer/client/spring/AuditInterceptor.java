@@ -47,7 +47,9 @@ public class AuditInterceptor {
   public AuditInterceptor(
           final ActionService actionService,
           final ExpressionParser compiledParser) {
+
     LOGGER.debug("{} - com.audittracer.client.spring.AuditInterceptor::init", LOG_PREFIX);
+
     this.actionService = actionService;
     this.compiledParser = compiledParser;
     this.expressionCache = new ConcurrentHashMap<>(256);
@@ -102,10 +104,8 @@ public class AuditInterceptor {
       final Parameter param = parameters[i];
       final Object arg = args[i];
 
-      // Set parameter by name - exactly like Spring does it
       context.setVariable(param.getName(), arg);
 
-      // Process AuditParam annotation - custom parameter naming
       final AuditParam auditParam = param.getAnnotation(AuditParam.class);
       if (auditParam != null && StringUtils.hasText(auditParam.value())) {
         context.setVariable(auditParam.value(), arg);
@@ -209,33 +209,27 @@ public class AuditInterceptor {
       return null;
     }
 
-    // Check if it's a SpEL expression with #{} wrapper
     if (isSpELExpression(expression)) {
       try {
-        // Extract SpEL expression from #{...} wrapper
         final String spelExpression = extractSpELExpression(expression);
         final Expression compiledExpression = getCompiledExpression(spelExpression);
         final Object value = compiledExpression.getValue(context);
         return value != null ? value.toString() : null;
       } catch (final Exception e) {
-        LOGGER.error("SpEL evaluation failed for '{}' in field '{}': {}",
-                expression, fieldName, e.getMessage());
+        LOGGER.error("SpEL evaluation failed for '{}' in field '{}': {}", expression, fieldName, e.getMessage());
         return "[SpEL Error: " + fieldName + "]";
       }
     }
 
-    // Return as literal value if no SpEL wrapper
     return expression;
   }
 
   private boolean isSpELExpression(String expression) {
-    // Standard Spring SpEL detection - exactly like @Value
     return (expression.startsWith("#{") && expression.endsWith("}")) ||
             (expression.startsWith("${") && expression.endsWith("}"));
   }
 
   private String extractSpELExpression(String wrappedExpression) {
-    // Extract content between #{...} or ${...} - exactly like Spring does
     if (wrappedExpression.startsWith("#{") || wrappedExpression.startsWith("${")) {
       return wrappedExpression.substring(2, wrappedExpression.length() - 1);
     }
@@ -251,18 +245,5 @@ public class AuditInterceptor {
         throw e;
       }
     });
-  }
-
-  // Cache structure for method information
-  private static class CachedMethodInfo {
-    final Audit auditAnnotation;
-    final Parameter[] parameters;
-    final String methodName;
-
-    CachedMethodInfo(Audit auditAnnotation, Parameter[] parameters, String methodName) {
-      this.auditAnnotation = auditAnnotation;
-      this.parameters = parameters;
-      this.methodName = methodName;
-    }
   }
 }

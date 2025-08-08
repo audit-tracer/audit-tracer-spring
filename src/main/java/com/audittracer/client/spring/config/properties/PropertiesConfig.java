@@ -10,12 +10,13 @@ import static com.audittracer.client.spring.AuditTracerName.CONFIG_BASE;
 public class PropertiesConfig {
   private ThreadPropertiesConfig thread;
   private QueuePropertiesConfig queue;
-  private String url = "http://localhost:3333";
   private String apiKey;
   private Environment environment;
   private boolean enabled = true;
+  private String url = "api.audittracer.com";;
 
   public PropertiesConfig() {
+
   }
 
   public Environment getEnvironment() {
@@ -35,7 +36,7 @@ public class PropertiesConfig {
   }
 
   public String getUrl() {
-    return url + "/api/v1/audit/batch";
+    return url + "/api/ingestion/audit/batch";
   }
 
   public String getApiKey() {
