@@ -36,7 +36,7 @@ public class PropertiesConfig {
   }
 
   public String getUrl() {
-    return url + "/api/ingestion/audit/batch";
+    return url;
   }
 
   public String getApiKey() {

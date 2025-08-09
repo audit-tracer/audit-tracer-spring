@@ -3,7 +3,9 @@ package com.audittracer.client.spring;
 import com.audittracer.client.spring.config.properties.Environment;
 import com.audittracer.client.spring.dto.AuditBatchRequest;
 import com.audittracer.client.spring.config.properties.PropertiesConfig;
+import com.audittracer.client.spring.exception.AuditException;
 import com.github.f4b6a3.ulid.Ulid;
+import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.DisposableBean;
@@ -68,6 +70,28 @@ public class ActionService implements DisposableBean {
     this.actionQueue = new LinkedBlockingQueue<>(config.getQueue().getSize());
   }
 
+  @PostConstruct
+  public void init() {
+    final HttpHeaders headers = new HttpHeaders();
+    headers.set(HEADER_API_KEY, this.config.getApiKey());
+    headers.setContentType(MediaType.APPLICATION_JSON);
+
+    final HttpEntity<AuditBatchRequest> entity = new HttpEntity<>(headers);
+
+    final var response = this.restTemplate.
+            postForEntity(
+                    "%s/api/ingestion/check".formatted(config.getUrl()),
+                    entity,
+                    Boolean.class);
+
+    if (!response.getStatusCode().is2xxSuccessful()) {
+      LOGGER.error("{} - API KEY verification error", LOG_PREFIX);
+      throw new AuditException("API KEY verification failed");
+    }
+
+    LOGGER.debug("{} - API KEY verified", LOG_PREFIX);
+  }
+
   public void processAction(final Action action) {
     if (config.getEnvironment() == Environment.LOCAL) {
       LOGGER.info("{} - {}", LOG_PREFIX, action.toString());
@@ -126,7 +150,7 @@ public class ActionService implements DisposableBean {
     final HttpEntity<AuditBatchRequest> entity = new HttpEntity<>(request, headers);
 
     final ResponseEntity<Boolean> response = restTemplate.postForEntity(
-            config.getUrl(),
+            config.getUrl() + "/api/audit/batch",
             entity,
             Boolean.class);
 
