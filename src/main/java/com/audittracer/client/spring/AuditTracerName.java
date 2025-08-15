@@ -11,6 +11,9 @@ public final class AuditTracerName {
   public static final String BATCH_BEAN = "executor.batch";
   public static final String HEADER_API_KEY = "X-API-KEY";
   public static final String LOG_PREFIX = "\u001B[32m[AUDIT-TRACER]\u001B[0m";
+  public static final String DEFAULT_API_URL = "https://api.audittracer.com";
+  public static final String CHECK_CONNECTION_URL_FORMAT = "%s/api/ingestion/check";
+  public static final String BATCH_AUDIT_URL = "%s/api/audit/batch";
 
   private AuditTracerName() {
   }

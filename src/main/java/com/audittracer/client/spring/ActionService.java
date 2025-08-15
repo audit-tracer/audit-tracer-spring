@@ -32,6 +32,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static com.audittracer.client.spring.AuditTracerName.AUDIT_TRACER_ENABLED_FLAG;
+import static com.audittracer.client.spring.AuditTracerName.BATCH_AUDIT_URL;
+import static com.audittracer.client.spring.AuditTracerName.CHECK_CONNECTION_URL_FORMAT;
 import static com.audittracer.client.spring.AuditTracerName.HTTP_EXECUTOR_BEAN;
 import static com.audittracer.client.spring.AuditTracerName.BATCH_BEAN;
 import static com.audittracer.client.spring.AuditTracerName.CONFIG_BASE;
@@ -80,12 +82,12 @@ public class ActionService implements DisposableBean {
 
     final var response = this.restTemplate.
             postForEntity(
-                    "%s/api/ingestion/check".formatted(config.getUrl()),
+                    CHECK_CONNECTION_URL_FORMAT.formatted(config.getUrl()),
                     entity,
                     Boolean.class);
 
     if (!response.getStatusCode().is2xxSuccessful()) {
-      LOGGER.error("{} - API KEY verification error", LOG_PREFIX);
+      LOGGER.error("{} - API KEY verification error. Please check your API Key", LOG_PREFIX);
       throw new AuditException("API KEY verification failed");
     }
 
@@ -150,7 +152,7 @@ public class ActionService implements DisposableBean {
     final HttpEntity<AuditBatchRequest> entity = new HttpEntity<>(request, headers);
 
     final ResponseEntity<Boolean> response = restTemplate.postForEntity(
-            config.getUrl() + "/api/audit/batch",
+            BATCH_AUDIT_URL.formatted(config.getUrl()),
             entity,
             Boolean.class);
 

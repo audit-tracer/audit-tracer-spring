@@ -1,5 +1,6 @@
 package com.audittracer.client.spring.config.properties;
 
+import com.audittracer.client.spring.AuditTracerName;
 import com.audittracer.client.spring.config.properties.queue.QueuePropertiesConfig;
 import com.audittracer.client.spring.config.properties.thread.ThreadPropertiesConfig;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -13,7 +14,7 @@ public class PropertiesConfig {
   private String apiKey;
   private Environment environment;
   private boolean enabled = true;
-  private String url = "api.audittracer.com";;
+  private String url = AuditTracerName.DEFAULT_API_URL;
 
   public PropertiesConfig() {
 
