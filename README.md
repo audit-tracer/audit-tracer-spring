@@ -1,6 +1,7 @@
-# audit-tracer-spring
-- Audit-Tracer Spring Lib
+# audit-tracer-spring-library
+
 - You can use it with this configuration in a pom file:
+
 ```xml
  <repositories>
     <repository>
