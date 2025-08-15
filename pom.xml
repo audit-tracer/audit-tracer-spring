@@ -66,7 +66,7 @@
     <distributionManagement>
         <repository>
             <id>repsy</id>
-            <name>My Private Maven Repository on Repsy</name>
+            <name>Audit Tracer Spring Lib Repsy Repository</name>
             <url>https://repo.repsy.io/mvn/audit-tracer/audit-tracer-spring-lib</url>
         </repository>
     </distributionManagement>
